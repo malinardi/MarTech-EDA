@@ -1,0 +1,211 @@
+---
+title: "EDA - EXPLORATORY DATA ANALYSIS"
+author: "MarTech IPAM 2024"
+date: "2024-03-01"
+output:
+  html_document: default
+  pdf_document: default
+  word_document: default
+---
+
+```{r setup, }
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(error = FALSE)
+
+
+```
+
+# EDA - Exploratory Data Analysis  
+
+## 1. Setup do ambiente
+
+### 1.1 Instalação e leitura das bibliotecas (pacotes) necessários
+```{r}
+
+options(repos = "https://cran.rstudio.com")
+
+rm(list = ls())
+if(!require(pacman)) install.packages("pacman")
+library(pacman)
+
+pacman::p_load(tidyverse,
+                 Hmisc,
+                 stargazer,
+                 visdat,
+                 rmarkdown, 
+                 knitr, 
+                 GGally, 
+                 summarytools,
+                 extremevalues,
+                 DataExplorer,
+                 gplots,
+                 ggplot2,
+                 SmartEDA,
+                 kableExtra
+                 )
+p_loaded()
+
+```
+
+### 1.2 Carga e vista geral do ficheiro
+
+```{r}
+
+
+dados <- read.csv("BankChurners.csv")
+
+# excluir as ultimas duas colunas para ocultar o resultado anterior do projeto
+dados <- dados[ ,1:21] 
+
+#varificar se há alguma linha repetida
+anyDuplicated(dados)
+
+ExpData(dados,type=1) 
+ExpData(dados,type=2) 
+
+
+str(dados) 
+
+plot_intro(dados)
+```
+
+### 1.3 Ajustes de variáveis e rótulos
+```{r}
+## rodar: unique(dados$VARIAVEL) para perceber a ordem e nomes dos labels
+#ajuste variável género
+dados$gender_cod <- as.numeric(dados$Gender == "F")
+levels(dados$gender_cod) <- c("M", "F")
+table(dados$Gender, dados$gender_cod)
+
+#ajuste variável nível de educação
+dados$education_cod <- as.numeric(factor(dados$Education_Level, levels = unique(dados$Education_Level)))
+
+levels(dados$education_cod) <- c("High School","Graduate","Uneducated","Unknown","College","Post-Graduate","Doctorate")
+table(dados$Education_Level, dados$education_cod)
+
+#ajuste variável flag de atrito
+dados$flag <- as.numeric(dados$Attrition_Flag == "Existing Customer")
+levels(dados$gender_cod) <- c("Existing Customer", "Attrited Customer")
+table(dados$Attrition_Flag, dados$flag)
+
+# ajuste variável estado civil
+dados$marital_cod <- as.numeric(factor(dados$Marital_Status, levels = unique(dados$Marital_Status)))
+
+levels(dados$marital_cod) <- c("Married","Single","Unknown","Divorced")
+table(dados$Marital_Status, dados$marital_cod)
+
+# ajuste variável nivel de renda
+dados$income_cod <- as.numeric(factor(dados$Income_Category, levels = unique(dados$Income_Category)))
+
+levels(dados$income_cod) <- c("$60K - $80K","Less than $40K","$80K - $120K",  "$40K - $60K",
+                              "$120K +","Unknown")
+table(dados$Income_Category, dados$income_cod)
+
+# ajuste variável tipo de cartão
+dados$card_cod <- as.numeric(factor(dados$Card_Category, levels = unique(dados$Card_Category)))
+
+levels(dados$card_cod) <- c("Blue", "Gold", "Silver", "Platinum")
+table(dados$Card_Category, dados$card_cod)
+
+
+```
+
+### 1.4 Visualização e tratamento de informações missing values:  
+```{r}
+#visto não haver missing values no dataframe as linhas estão ocultas.
+
+#gg_miss_var(dados)
+#gg_miss_upset(dados) 
+#plot_missing(dados)
+
+#Excluding rows with missing data
+#dados_no_na <- na.omit(dados)
+#ExpData(dados_no_na,type=1)
+
+```
+
+## 2. Análise Univariada
+
+```{r}
+est <- ExpNumStat(dados, Outlier = TRUE, Nlim=1)
+est
+
+est_shor <- est %>%
+  dplyr::select(Vname, TN, NA_Value, min, max, median, mean, SD, nOutliers)
+
+est_shor
+
+```
+
+
+
+### 2.1 Análise Visual / Gráfica
+```{r}
+#Análise das variáveis categóricas
+plot_bar(dados)
+
+#Análise das variáveis numéricas
+plot_histogram(dados)
+plot_density(dados)
+plot_qq(dados)
+
+```
+
+### 2.2 Análise Bivariada das Variáveis Categóricas
+```{r}
+#Análise das variáveis categóricas por Genéro
+plot_bar(dados, by = "Gender")
+
+#Análise das variáveis categóricas por Nível de Educação
+plot_bar(dados, by = "Education_Level")
+
+#Análise das variáveis categóricas por Nível de Renda
+plot_bar(dados, by = "Income_Category")
+
+#Análise das variáveis categóricas por Status civil
+plot_bar(dados, by = "Marital_Status")
+
+#Análise das variáveis categóricas por flag de Atrito
+plot_bar(dados, by = "Attrition_Flag")
+
+#Análise das variáveis categóricas por Tipo de Cartão
+plot_bar(dados, by = "Card_Category")
+```
+
+### 2.2 Análise Bivariada das Variáveis Numéricas
+```{r}
+#Análise das variáveis categóricas por Genéro
+plot_boxplot(dados, by = "Gender")
+
+#Análise das variáveis categóricas por Nível de Educação
+plot_boxplot(dados, by = "Education_Level")
+
+#Análise das variáveis categóricas por Nível de Renda
+plot_boxplot(dados, by = "Income_Category")
+
+#Análise das variáveis categóricas por Status civil
+plot_boxplot(dados, by = "Marital_Status")
+
+#Análise das variáveis categóricas por flag de Atrito
+plot_boxplot(dados, by = "Attrition_Flag")
+
+#Análise das variáveis categóricas por Tipo de Cartão
+plot_boxplot(dados, by = "Card_Category")
+```
+
+### 2.3 Correlação entre as variáveis
+```{r}
+
+ggpairs(dados[, c("Customer_Age", "Months_on_book","Total_Relationship_Count", "Months_Inactive_12_mon","Contacts_Count_12_mon","Credit_Limit","Total_Revolving_Bal",      "Avg_Open_To_Buy","Total_Amt_Chng_Q4_Q1","Total_Trans_Amt"  ,"Total_Trans_Ct",           "Total_Ct_Chng_Q4_Q1","Avg_Utilization_Ratio"
+)], title="Correlações de Pearson") +  theme(text = element_text(size = 6))
+
+
+
+  
+```
+
+
+
+
+
