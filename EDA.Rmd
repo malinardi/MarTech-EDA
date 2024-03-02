@@ -30,19 +30,12 @@ if(!require(pacman)) install.packages("pacman")
 library(pacman)
 
 pacman::p_load(tidyverse,
-                 Hmisc,
-                 stargazer,
-                 visdat,
                  rmarkdown, 
                  knitr, 
                  GGally, 
-                 summarytools,
-                 extremevalues,
                  DataExplorer,
                  gplots,
-                 ggplot2,
-                 SmartEDA,
-                 kableExtra
+                 SmartEDA
                  )
 p_loaded()
 
